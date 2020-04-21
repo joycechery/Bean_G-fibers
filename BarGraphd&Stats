@@ -1,0 +1,55 @@
+#https://www.datanovia.com/en/lessons/how-to-do-a-t-test-in-r-calculation-and-reporting/how-to-do-two-sample-t-test-in-r/
+#https://rdrr.io/github/kassambara/rstatix/man/t_test.html
+
+#load libraries
+library(ggplot2)
+library(rstatix)
+library(dplyr)
+
+#import data
+datum<- read.csv("/Users/joycechery/Desktop/Research/gfiber/CLSF_Presentation/Plant_Heights.csv")
+head(datum)
+#calculate summary statistics
+summary<- group_by(datum, Treatment) %>%
+              summarise(
+                count = n(),
+                mean = mean(Length, na.rm = TRUE),
+                sd = sd(Length, na.rm = TRUE),
+                se= sd(Length)/sqrt(n()))
+summary
+
+#plot the ggplot with error bars
+gg <- melt(datum,id="Treatment")   # df is your original table
+Height<- ggplot(gg, aes(x=Treatment, y=value, fill=factor(Treatment))) + 
+  ggtitle("Plant Height (cm)") + 
+  xlab("Treatments") + ylab("Plant Height (cm)") + 
+  theme (plot.title = element_text(size = 15), 
+         axis.text.x = element_text(size = 10), 
+         axis.text.y = element_text(size = 10), 
+         axis.title.x = element_text(size = 12),  
+         axis.title.y= element_text(size = 12))  +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 9)) +
+  stat_summary(fun.y=mean, geom="bar",position=position_dodge(1)) + 
+  stat_summary(fun.data= mean_se, geom="errorbar",
+               color="black",position=position_dodge(1), width=.2) +
+  scale_fill_discrete("Treatment") 
+Height
+
+# Perform T-test
+#Comparison of means
+#Step 1: Is the full dataset normal? p > .05 if so
+with(datum, shapiro.test(Length))
+hist(datum$Length)
+
+#F-test
+#Step 2: Do the two populations have the same variances? p > .05 if so
+#only works if there are two levels...
+#so when i go to perform the t-test, I will choose the option that the variances dont have to be equal
+#var.test(vascular_bundles ~ genotype, data = datum)
+
+#T-test
+#ttest<- t_test(datum,diamater.of.xylem ~ genotype, ref.group = "col_root", paired = FALSE, var.equal = FALSE)
+#ttest$p.adj.signif
+
+wx_1<- wilcox_test(datum,Length ~ Treatment, ref.group = "1.Control")
+wx_1$p.adj.signif
