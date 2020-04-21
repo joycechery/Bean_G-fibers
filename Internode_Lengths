@@ -1,0 +1,81 @@
+#https://stackoverflow.com/questions/22305023/how-to-get-a-barplot-with-several-variables-side-by-side-grouped-by-a-factor
+#load libraries
+library(reshape2) 
+library(ggplot2)
+library(rstatix)
+library(dplyr)
+
+#import data
+datum<- read.csv("/Users/joycechery/Desktop/Research/gfiber/CLSF_Presentation/Internodes.csv")
+head(datum)
+
+#Grouped by Internode
+gg <- melt(datum,id="Treatment")   # df is your original table
+
+#bar plots with standard error plotted
+Internode_Lengths<- ggplot(gg, aes(x=variable, y=value, fill=Treatment)) + 
+  ggtitle("Internode Lengths (cm)") + 
+  xlab("Treatments") + ylab("Internode Lengths (cm)") + 
+  theme (plot.title = element_text(size = 15), 
+         axis.text.x = element_text(size = 7), 
+         axis.text.y = element_text(size = 10), 
+         axis.title.x = element_text(size = 12),  
+         axis.title.y= element_text(size = 12))  +
+  stat_summary(fun.y=mean, geom="bar",position=position_dodge(1)) + 
+  stat_summary(fun.data= mean_se, geom="errorbar",
+               color="grey40",position=position_dodge(1), width=.2) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 9)) +
+  scale_fill_discrete("Treatment") 
+Internode_Lengths
+
+#Grouped by Treatment
+gg <- melt(datum,id="Treatment")   # df is your original table
+plot<- ggplot(gg, aes(x=Treatment, y=value, fill=factor(variable))) + 
+  ggtitle("Internode Lengths (cm)") + 
+  xlab("Treatments") + ylab("Internode Lengths (cm)") + 
+  theme (plot.title = element_text(size = 15), 
+         axis.text.x = element_text(size = 10), 
+         axis.text.y = element_text(size = 10), 
+         axis.title.x = element_text(size = 12),  
+         axis.title.y= element_text(size = 12))  +
+  stat_summary(fun.y=mean, geom="bar",position=position_dodge(1)) + 
+  stat_summary(fun.data= mean_se, geom="errorbar",
+               color="grey40",position=position_dodge(1), width=.2) +
+  scale_fill_discrete("Treatment") 
+plot + scale_fill_grey() 
+
+#calculate summary statistics
+summary<- group_by(datum, Treatment) %>%
+  summarise(
+    count = n(),
+    mean = mean(, na.rm = TRUE),
+    sd = sd(, na.rm = TRUE),
+    se= sd()/sqrt(n()))
+
+#Anovas for each Internode?
+#import data
+datum<- read.csv("/Users/joycechery/Desktop/Research/gfiber/CLSF_Presentation/Internodes.csv")
+head(datum)
+
+#Grouped by Internode
+summary<- group_by(datum, Treatment) %>%
+  summarise(
+    count = n(),
+    mean = mean(Internode9, na.rm = TRUE),
+    sd = sd(Internode9, na.rm = TRUE),
+    se= sd(Internode9)/sqrt(n()))
+summary
+
+#plot the ggplot with error bars
+ggplot(summary, aes(Treatment, mean, fill= Treatment)) + 
+  geom_col() +  
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width=0.2) +
+  labs(title="Internode1_Height", x="Treatment", y = "Internode1_Height") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 9)) +
+  theme_classic()
+
+#Anova?
+res.aov <- aov(datum$Internode9 ~ datum$Treatment) 
+summary(res.aov) 
+TukeyHSD(res.aov) 
+
